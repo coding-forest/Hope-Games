@@ -12,8 +12,11 @@ module.exports = {
     name: 'roulette',   
     execute: async(message, args, client) => {
         var players = {
-           
+            player_a: '881186915271970907',
+            player_b: '976534298062639106'
         }
+
+        var firstPlayers;
         // wheelCanvas.context.beginPath()
         // wheelCanvas.context.arc(0, 0, 2000, 0, Math.PI * 2, true)
         // wheelCanvas.context.closePath()
@@ -21,10 +24,19 @@ module.exports = {
         const generateEmbed = (plys) => {
 
             var players_str = ''
-
+            var kickedPlayersStr = ''
             for(key of Object.keys(plys)){
                 var player = plys[key]
                 players_str += `:regional_indicator_${key.split('_')[1]}:  :  <@${player}>\n`
+            }
+
+            if(firstPlayers){
+                for(kickedKey of Object.keys(firstPlayers)){
+                    if(!players.hasOwnProperty(kickedKey)){
+                        var player = plys[kickedKey]
+                        kickedPlayersStr += `:regional_indicator_${kickedKey.split('_')[1]}:  :  <@${player}>\n`
+                    }
+                }
             }
 
 
@@ -32,9 +44,14 @@ module.exports = {
             .setColor('#4bd1e1')
             .setThumbnail(message.guild.iconURL({dynamic: true}))
             .setTitle('روليت')
-            .setDescription(`**...جاري انتظار لاعبين اخرين**\n ستبدأ الجولة الأولى بعد \n <t:${game_start_at}:R>`)
-            .addField('**>>> الاعبون: **', players_str !== '' ? players_str : 'لا يوجد أي لاعب')
+            .setDescription(rounds ? `**لقد بدأت اللعبة .**` : `**...جاري انتظار لاعبين اخرين**\n ستبدأ الجولة الأولى بعد \n <t:${game_start_at}:R>`)
+            .addField('**>>> الاعبون : **', players_str !== '' ? players_str : 'لا يوجد أي لاعب')
             .setTimestamp()
+
+            if(kickedPlayersStr !== ''){
+                startEmbed.addField('**>>> تم إقصاء : **',kickedPlayersStr )
+            }
+
 
             return startEmbed
         }
@@ -42,61 +59,104 @@ module.exports = {
         const generateRoulette = async(randomPlayer) => {  
             
             
-         
-        var wheelCanvas = {}
-        wheelCanvas.create = Canvas.createCanvas(1920, 1920)
-        wheelCanvas.context = wheelCanvas.create.getContext('2d')
-        wheelCanvas.context.font = '72px sans-serif';
-        wheelCanvas.context.fillStyle = '#ffffff'
-        
-        var arrayOfPlayers = Object.keys(players).map(player => {
-            return players[player]
-        })
-
-        var randomPlayerIndex = arrayOfPlayers.indexOf(randomPlayer)
-        arrayOfPlayers.splice(randomPlayerIndex, 1)
-        arrayOfPlayers = [randomPlayer].concat(arrayOfPlayers)
-
-        var players_length = arrayOfPlayers.length
-
-
-        for (var i = 0; i < players_length; i++) {
-            var pieAngle = 2 * Math.PI / players_length;
-            wheelCanvas.context.beginPath();
-            wheelCanvas.context.moveTo(975, 975);
-            wheelCanvas.context.arc(975, 975, 870, i*pieAngle - (pieAngle/2), (i+1)*pieAngle - (pieAngle/2), false);
-            wheelCanvas.context.lineWidth = 150;
-            var hueValue = i * 15;
-            wheelCanvas.context.fillStyle = 'hsl(' + hueValue + ',70%, 60%)';
-            // '#'+(Math.random()*0xFFFFFF<<0).toString(16);
-            wheelCanvas.context.fill();
-            wheelCanvas.context.lineWidth = 2;
-            wheelCanvas.context.strokeStyle = '#444';
-            wheelCanvas.context.stroke();
-        }  
-        var i = 0
-        for(p of arrayOfPlayers){
-            var member = await message.guild.members.cache.get(p)
-                var pieAngle = 2 * Math.PI / players_length;
-                var dx = 800 * Math.sin((i+1) * (pieAngle))   + 975
-                var dy = 800 * Math.cos((i+1) * (pieAngle))   + 975
-               
-                wheelCanvas.context.font = '100px Poppins'
-                wheelCanvas.context.fillStyle = '#ffffff'
-                wheelCanvas.context.textAlign = 'center'
-                wheelCanvas.context.textBaseline = 'middle';
-                wheelCanvas.context.fillText(`${member.user.username}`,dx, dy)
+            var wheelCanvas = {}
+            wheelCanvas.create = Canvas.createCanvas(1920, 1920)
+            wheelCanvas.context = wheelCanvas.create.getContext('2d')
+            wheelCanvas.context.font = '72px sans-serif';
+            wheelCanvas.context.fillStyle = '#ffffff'
+            
+            var arrayOfPlayers = Object.keys(players).map(player => {
+                return players[player]
+            })
+    
            
-            i++
-        }
-        
-        
+            var players_length = arrayOfPlayers.length
+    
+            var canvasWidth = wheelCanvas.context.canvas.width;
+            var canvasHeight =  wheelCanvas.context.canvas.height
+            for (var i = 0; i < players_length; i++) {
+                var pieAngle = 2 * Math.PI / players_length;
+                wheelCanvas.context.beginPath();
+                wheelCanvas.context.moveTo(canvasWidth/2, canvasHeight/2);
+                wheelCanvas.context.arc(canvasWidth/2, canvasHeight/2, canvasWidth/2, i*pieAngle, (i+1)*pieAngle   , false);
+                wheelCanvas.context.lineWidth = 150;
+                var hueValue = i * 15;
+                wheelCanvas.context.fillStyle = 'hsl(' + hueValue + ',70%, 60%)';
+                // '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+                wheelCanvas.context.fill();
+                wheelCanvas.context.lineWidth = 2;
+                wheelCanvas.context.strokeStyle = '#444';
+                wheelCanvas.context.stroke();
 
-        await Canvas.loadImage('C:/Users/Nasirishop/Documents/GitHub/Hope-Games/images/empty-roulette-wheel.png').then(img => {
-            wheelCanvas.context.drawImage(img, 0,0, 1920, 1920)
-        })
-            return wheelCanvas.create.toBuffer()
-        }
+            }  
+
+            await Canvas.loadImage('C:/Users/Nasirishop/Documents/GitHub/Hope-Games/images/empty-roulette-wheel.png').then(img => {
+                wheelCanvas.context.drawImage(img, 0,0, 1920, 1920)
+            })
+
+            // await Canvas.loadImage(message.guild.iconURL({format: 'png',size: 128})).then(img => {
+            //     wheelCanvas.context.drawImage(img, canvasWidth/2 - 64, canvasHeight/2 - 64, 500, 500)
+            // })
+            wheelCanvas.context.save()
+            await Canvas.loadImage('C:/Users/Nasirishop/Documents/GitHub/Hope-Games/images/roulette-pointer.png').then(img => {
+                var randomPlayerIndex = arrayOfPlayers.indexOf(players[randomPlayer])
+                var pieAngle = 2 * Math.PI / players_length;
+                var rotateAngle = (randomPlayerIndex) * pieAngle + (pieAngle/2)
+                var imgX = canvasWidth/2 - 448/2 + 105
+                var imgY = canvasHeight/2 - 496/2
+                var imgWidth = 448
+                var imgHeight = 496
+
+                wheelCanvas.context.translate(canvasWidth/2,canvasHeight/2); 
+                wheelCanvas.context.rotate(rotateAngle)
+
+
+                wheelCanvas.context.drawImage(img, imgX - (canvasHeight/2), imgY - (canvasHeight/2) , imgWidth,imgHeight)
+
+                
+            })
+            wheelCanvas.context.restore()   
+
+            var i = 0
+            var inversedArr = arrayOfPlayers
+            var firstElm = inversedArr.shift()
+            inversedArr.reverse()
+            inversedArr = [firstElm].concat(inversedArr)
+
+            var emoji_alphabets = {
+                "a":"https://discord.com/assets/bbe8ae762f831966587a35010ed46f67.svg","b":"https://discord.com/assets/515873f6898e0b26daf51921c65a43f7.svg","c":"https://discord.com/assets/3e0ee2fd29177284491b8fb543bb4bdb.svg","d":"https://discord.com/assets/7b63a90197c59c371914e0d1c91af358.svg","e":"https://discord.com/assets/0df8cc6898cdb812709a4672f137b62d.svg","f":"https://discord.com/assets/197cdfb70e6835c81cbb1af86ab7e01e.svg","g":"https://discord.com/assets/8971c31a6aaa34e99f197c5c9c3d03ad.svg","h":"https://discord.com/assets/8971c31a6aaa34e99f197c5c9c3d03ad.svg","i":"https://discord.com/assets/4606ee2759d6aae4410c034fb94a8395.svg","j":"https://discord.com/assets/72005bede6a07f7681914dc974ed3ff8.svg","k":"https://discord.com/assets/547b9b60d8dfc97568666a168793dc73.svg","l":"https://discord.com/assets/c07212f2d498c21e56d3b3f581799972.svg","m":"https://discord.com/assets/3ae4af803746f6882a684a5a48dc29ff.svg","n":"https://discord.com/assets/f654b0f03f641e89a0db09b4c69cc33b.svg","o":"https://discord.com/assets/89bba1c5173777ba0a352d7ac585a647.svg","p":"https://discord.com/assets/7f56a6932ada40d5b3562468de2b0cde.svg","q":"https://discord.com/assets/8f10626d49756081044bcb1a2314140f.svg","r":"https://discord.com/assets/7102ad5cacc8ba7bd99fa16b4e6468a5.svg","s":"https://discord.com/assets/c4cb8aa4b3abef19178d052694e3ebf4.svg","t":"https://discord.com/assets/6c0a0b4df6f599f65e40ad372047d782.svg"
+            }
+            wheelCanvas.context.save()
+            for(p of inversedArr){
+                // wheelCanvas.context.save()
+                    var pieAngle = 2 * Math.PI / players_length;
+                    var dx = 400 * Math.sin((i+1) * (pieAngle )) + 975
+                    var dy = 400 * Math.cos((i+1) * (pieAngle ))+ 975
+                    var alphabet = Object.keys(players).find(key => players[key] === p).split('_')[1]
+                   
+                    // wheelCanvas.context.rotate(pieAngle/2)
+                    // wheelCanvas.context.font = '100px Poppins'
+                    // wheelCanvas.context.fillStyle = '#ffffff'
+                    // wheelCanvas.context.textAlign = 'center'
+                    // wheelCanvas.context.textBaseline = 'middle';
+                    // wheelCanvas.context.fillText(`${p}`,dx, dy)
+                    var emoji_alphabet = emoji_alphabets[alphabet]
+                    await Canvas.loadImage(emoji_alphabet).then(img => {
+                        wheelCanvas.context.drawImage(img, dx-50, dy-50, 100, 100)
+                    })
+                    i++
+                // wheelCanvas.context.restore()
+            }
+
+            wheelCanvas.context.rotate(2 * Math.PI / players_length)
+            wheelCanvas.context.restore()
+
+           
+            
+            
+    
+                return wheelCanvas.create.toBuffer()
+            }
 
         var game_over = false
         var alphabets = ['🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲', '🇳', '🇴', '🇵', '🇶', '🇷', '🇸', '🇹']
@@ -104,6 +164,7 @@ module.exports = {
         var curr_timestamp = Date.now()
         var game_start_at = Math.floor(curr_timestamp/1000) + 30
         var currPlayer;
+        var rounds = 0
         var rows = []
         var real_alphabets = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t"];
         for(var i = 0; i < Math.floor(alphabets.length/5); i++){
@@ -142,7 +203,7 @@ module.exports = {
         })
 
 
-        client.on('interactionCreate', (interaction) => {
+        client.on('interactionCreate', async(interaction) => {
             try{
                 if(interaction.isButton()){
                     var customId = interaction.customId
@@ -165,15 +226,18 @@ module.exports = {
                                 ],
                                 components: rows  
                             }).then(async(msg) => {
-                               
-                            })
+                               await interaction.reply({
+                                ephemeral: true,
+                                content: 'لقد شاركت في اللعبة'
+                               }).catch(err => console.log(err))
+                            }).catch(err => console.log(err))
                         }else if(Object.values(players).indexOf(userId) > -1){
-                           interaction.reply({
+                           await interaction.reply({
                                 ephemeral: true,
                                 content: 'إنك مشارك بالفعل',
                            })
                         }else if(players.hasOwnProperty(customId)){
-                            interaction.reply({
+                            await interaction.reply({
                                 ephemeral: true,
                                 content: 'لقد تم أخذ هذا الحرف من قبل شخص أخر.',
                            })
@@ -206,9 +270,15 @@ module.exports = {
                             })
     
                         }else if(Object.values(players).indexOf(userId) > -1){
-                           
+                            await interaction.reply({
+                                 ephemeral: true,
+                                 content: 'إنك مشارك بالفعل',
+                            })
                          }else if(players.hasOwnProperty(customId)){
-                           
+                             await interaction.reply({
+                                 ephemeral: true,
+                                 content: 'لقد تم أخذ هذا الحرف من قبل شخص أخر.',
+                            })
                          }
                     }else if(customId.startsWith('kick_')){
                         if(currPlayer === userId){
@@ -238,6 +308,16 @@ module.exports = {
                         }else{
                            
                         }
+                    }else if(customId === 'helpButton'){
+                        await interaction.reply({
+                            ephemeral: true,
+                            content: `**
+                            1- اختر الحرف الذي سيمثلك في اللعبة 
+                            2- ستبدأ الجولة الأولى وسيتم تدوير العجلة واختيار لاعب عشوائي
+                            3- إذا كنت اللاعب المختار ، فستختار لاعبًا من اختيارك ليتم طرده من اللعبة
+                            4- يُطرد اللاعب وتبدأ جولة جديدة ، عندما يُطرد جميع اللاعبين ويتبقى لاعبان فقط ، ستدور العجلة ويكون اللاعب المختار هو الفائز باللعبة
+                            **`
+                        })
                     }
                 }
             }catch(err){
@@ -245,11 +325,13 @@ module.exports = {
             }
         })
         
-        await new Promise(r => setTimeout(r, 10*1000))
-
+        await new Promise(r => setTimeout(r, 30*1000))
+        const toDisable = ['randomJoin', 'player_']
         for(row of rows){
             for(button of row.components){
+               if(button.customId.startsWith(toDisable[0]) || button.customId.startsWith(toDisable[1])){
                 button.setDisabled(true)
+               }
             }
         }
 
@@ -271,8 +353,10 @@ module.exports = {
                 await new Promise(r => setTimeout(r, 10*1000)).then(async(r) => {
                     
                 })
+                firstPlayers = players
                 await startMsg.edit(`تم إختيار الحروف لكل لاعب, ستبدأ الجولة الأولى في  ✅` + '`0  ثانية`').then(async(r) => {
                     while(Object.keys(players).length > 1){
+                        rounds++
                         var currLength = Object.keys(players).length
                         var plys_alphabets = Object.keys(players)
                         var randomKey = plys_alphabets[Math.floor(Math.random() * plys_alphabets.length)]
@@ -281,12 +365,12 @@ module.exports = {
                         if(Object.keys(players).length === 2){
                             var lastPlayer = Object.keys(players).find(key => players[key] !== randomPlayer)
                             message.channel.send({
-                                content: `:regional_indicator_${randomKey.split('_')[1]}: : <@${randomPlayer}>  -  فاز بالعبة!`,
+                                content: `:regional_indicator_${randomKey.split('_')[1]}: : <@${randomPlayer}>  -  فاز باللعبة!`,
                                 files: [new MessageAttachment(await generateRoulette(randomPlayer), 'nice-guy.png')]
                             }).then(winMsg => {
                                 delete players[lastPlayer]
                                 return message.channel.send({
-                                    content: `مبروك <@${randomPlayer}>, لقد فزت بالعبة :crown:`
+                                    content: `مبروك <@${randomPlayer}>, لقد فزت باللعبة :crown:`
                                 })
                             })
                         }else{
@@ -294,14 +378,21 @@ module.exports = {
     
                             for(player of Object.keys(players)){
                                 var member = await message.guild.members.cache.get(players[player])
+
                                 var kick_alphabet = player.split('_')[1]
                                 var emojiAlphabet = alphabets[real_alphabets.indexOf(kick_alphabet)]
                                 var playerId = players[player]
                                 var button =   new MessageButton()
                                 .setCustomId(`kick_${kick_alphabet}`)
                                 .setEmoji(emojiAlphabet)
-                                .setLabel(member.user.username)
+                                
                                 .setStyle('SECONDARY')
+                                if(member) {
+                                    button.setLabel(member.user.username)
+                                }else{
+                                    button.setLabel('unknown')
+                                }
+
                                 if(randomPlayer === playerId){
                                     button.setDisabled(true)
                                 }
